@@ -2,9 +2,7 @@ library ruler_picker;
 
 import 'dart:math';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 /// a triangle painter
 class _TrianglePainter extends CustomPainter {
@@ -13,12 +11,12 @@ class _TrianglePainter extends CustomPainter {
   // _TrianglePainter({this.lineSize = 16});
   @override
   void paint(Canvas canvas, Size size) {
-    Path path = Path();
+    final Path path = Path();
     path.moveTo(0, 0);
     path.lineTo(size.width, 0);
     path.lineTo(size.width / 2, tan(pi / 3) * size.width / 2);
     path.close();
-    Paint paint = Paint();
+    final Paint paint = Paint();
     paint.color = const Color.fromARGB(255, 118, 165, 248);
     paint.style = PaintingStyle.fill;
     canvas.drawPath(path, paint);
@@ -35,13 +33,9 @@ class _TrianglePainter extends CustomPainter {
 /// 用于 RulerPicker 的控制器，可以在构造函数里初始化默认值
 class RulerPickerController extends ValueNotifier<int> {
   RulerPickerController({int value = 0}) : super(value);
-  int get value => super.value;
-  set value(int newValue) {
-    super.value = newValue;
-  }
 }
 
-typedef void ValueChangedCallback(int value);
+typedef ValueChangedCallback = void Function(int value);
 
 /// RulerPicker 标尺选择器
 /// [width] 必须是具体的值，包括父级container的width，不能是 double.infinity，
@@ -61,7 +55,8 @@ class RulerPicker extends StatefulWidget {
   final Color rulerBackgroundColor;
   final RulerPickerController? controller;
 
-  RulerPicker({
+  const RulerPicker({
+    Key? key,
     required this.beginValue,
     required this.endValue,
     required this.onValueChange,
@@ -70,12 +65,16 @@ class RulerPicker extends StatefulWidget {
     this.rulerMarginTop = 0,
     this.scaleLineStyleList = const [
       ScaleLineStyle(
-          scale: 0,
-          color: Color.fromARGB(255, 188, 194, 203),
-          width: 2,
-          height: 32),
+        scale: 0,
+        color: Color.fromARGB(255, 188, 194, 203),
+        width: 2,
+        height: 32,
+      ),
       ScaleLineStyle(
-          color: Color.fromARGB(255, 188, 194, 203), width: 1, height: 20),
+        color: Color.fromARGB(255, 188, 194, 203),
+        width: 1,
+        height: 20,
+      ),
     ],
     this.rulerScaleTextStyle = const TextStyle(
       color: Color.fromARGB(255, 188, 194, 203),
@@ -86,8 +85,11 @@ class RulerPicker extends StatefulWidget {
     this.initValue = 0,
     this.rulerBackgroundColor = Colors.white,
     this.controller,
-  }) : assert(endValue > beginValue,
-            initValue >= beginValue && initValue <= endValue);
+  })  : assert(
+          endValue > beginValue,
+          initValue >= beginValue && initValue <= endValue,
+        ),
+        super(key: key);
   @override
   State<StatefulWidget> createState() {
     return RulerPickerState();
@@ -99,21 +101,22 @@ class RulerPickerState extends State<RulerPicker> {
   bool isPosFixed = false;
   String value = '';
   late ScrollController scrollController;
-  Map<int, ScaleLineStyle> _scaleLineStyleMap = {};
+  final Map<int, ScaleLineStyle> _scaleLineStyleMap = {};
 
   @override
   void initState() {
     super.initState();
 
-    widget.scaleLineStyleList.forEach((element) {
+    for (final element in widget.scaleLineStyleList) {
       _scaleLineStyleMap[element.scale] = element;
-    });
+    }
 
-    double initValueOffset =
+    final double initValueOffset =
         (widget.initValue - widget.beginValue) * _ruleScaleInterval;
 
     scrollController = ScrollController(
-        initialScrollOffset: initValueOffset > 0 ? initValueOffset : 0);
+      initialScrollOffset: initValueOffset > 0 ? initValueOffset : 0,
+    );
 
     scrollController.addListener(() {
       setState(() {
@@ -148,21 +151,20 @@ class RulerPickerState extends State<RulerPicker> {
       );
     }
 
-    return Container(
-      child: SizedBox(
-        width: _ruleScaleInterval * 2,
-        height: 45,
-        child: Stack(
-          children: <Widget>[
-            Align(alignment: Alignment.topCenter, child: triangle()),
-            Align(
-                child: Container(
+    return SizedBox(
+      width: _ruleScaleInterval * 2,
+      height: 45,
+      child: Stack(
+        children: <Widget>[
+          Align(alignment: Alignment.topCenter, child: triangle()),
+          Align(
+            child: Container(
               width: 3,
               height: 34,
-              color: Color.fromARGB(255, 118, 165, 248),
-            )),
-          ],
-        ),
+              color: const Color.fromARGB(255, 118, 165, 248),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -183,7 +185,7 @@ class RulerPickerState extends State<RulerPicker> {
   Widget _buildRulerScaleLine(int index) {
     double width = 0;
     double height = 0;
-    Color color = Color.fromARGB(255, 188, 194, 203);
+    Color color = const Color.fromARGB(255, 188, 194, 203);
     int scale = index % 10;
 
     if (_scaleLineStyleMap[scale] != null) {
@@ -215,27 +217,30 @@ class RulerPickerState extends State<RulerPicker> {
   }
 
   Widget _buildRulerScale(BuildContext context, int index) {
-    return Container(
+    return SizedBox(
       width: _ruleScaleInterval,
       child: Stack(
         clipBehavior: Clip.none,
         children: <Widget>[
           Align(
-              alignment: Alignment.topCenter,
-              child: _buildRulerScaleLine(index)),
+            alignment: Alignment.topCenter,
+            child: _buildRulerScaleLine(index),
+          ),
           Positioned(
             bottom: 5,
             width: 50,
             left: -25 + _ruleScaleInterval / 2,
             child: index % 10 == 0
-                ? Container(
-                    alignment: Alignment.center,
-                    child: Text(
-                      getRulerScaleText(index),
-                      style: widget.rulerScaleTextStyle,
+                ? Center(
+                    child: RotatedBox(
+                      quarterTurns: 3,
+                      child: Text(
+                        getRulerScaleText(index),
+                        style: widget.rulerScaleTextStyle,
+                      ),
                     ),
                   )
-                : SizedBox(),
+                : const SizedBox(),
           ),
         ],
       ),
@@ -247,20 +252,23 @@ class RulerPickerState extends State<RulerPicker> {
 
 //使得尺子刻度和指示器对齐
   void fixOffset() {
-    int tempFixedOffset = (scrollController.offset + 0.5) ~/ 1;
+    final int tempFixedOffset = (scrollController.offset + 0.5) ~/ 1;
 
-    double fixedOffset = (tempFixedOffset + _ruleScaleInterval / 2) ~/
+    final double fixedOffset = (tempFixedOffset + _ruleScaleInterval / 2) ~/
         _ruleScaleInterval.toInt() *
         _ruleScaleInterval;
     Future.delayed(Duration.zero, () {
-      scrollController.animateTo(fixedOffset,
-          duration: Duration(milliseconds: 50), curve: Curves.bounceInOut);
+      scrollController.animateTo(
+        fixedOffset,
+        duration: const Duration(milliseconds: 50),
+        curve: Curves.bounceInOut,
+      );
     });
   }
 
   ///获取尺子的刻度提示文字
   String getRulerScaleText(int index) {
-    int rulerScaleValue = index + widget.beginValue;
+    final int rulerScaleValue = index + widget.beginValue;
     if (widget.onBuildRulerScalueText == null) {
       return rulerScaleValue.toString();
     }
@@ -270,51 +278,50 @@ class RulerPickerState extends State<RulerPicker> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.only(
-
-          // right: widget.width - _ruleScaleInterval
-          ),
+    return SizedBox(
       width: widget.width,
       height: widget.height + widget.rulerMarginTop,
       child: Stack(
         children: <Widget>[
           Align(
-              alignment: Alignment.bottomCenter,
-              child: Listener(
-                onPointerDown: (event) {
-                  FocusScope.of(context).requestFocus(new FocusNode());
-                  isPosFixed = false;
+            alignment: Alignment.bottomCenter,
+            child: Listener(
+              onPointerDown: (event) {
+                FocusScope.of(context).requestFocus(FocusNode());
+                isPosFixed = false;
+              },
+              onPointerUp: (event) {},
+              child: NotificationListener(
+                onNotification: (scrollNotification) {
+                  if (scrollNotification is ScrollStartNotification) {
+                  } else if (scrollNotification is ScrollUpdateNotification) {
+                  } else if (scrollNotification is ScrollEndNotification) {
+                    if (!isPosFixed) {
+                      isPosFixed = true;
+                      fixOffset();
+                    }
+                  }
+                  return true;
                 },
-                onPointerUp: (event) {},
-                child: NotificationListener(
-                    onNotification: (scrollNotification) {
-                      if (scrollNotification is ScrollStartNotification) {
-                      } else if (scrollNotification
-                          is ScrollUpdateNotification) {
-                      } else if (scrollNotification is ScrollEndNotification) {
-                        if (!isPosFixed) {
-                          isPosFixed = true;
-                          fixOffset();
-                        }
-                      }
-                      return true;
-                    },
-                    child: Container(
-                        width: double.infinity,
-                        height: widget.height,
-                        color: widget.rulerBackgroundColor,
-                        child: ListView.builder(
-                          padding: EdgeInsets.only(
-                              left: (widget.width - _ruleScaleInterval) / 2,
-                              right: (widget.width - _ruleScaleInterval) / 2),
-                          itemExtent: _ruleScaleInterval,
-                          itemCount: widget.endValue - widget.beginValue + 1,
-                          controller: scrollController,
-                          scrollDirection: Axis.horizontal,
-                          itemBuilder: _buildRulerScale,
-                        ))),
-              )),
+                child: Container(
+                  width: double.infinity,
+                  height: widget.height,
+                  color: widget.rulerBackgroundColor,
+                  child: ListView.builder(
+                    padding: EdgeInsets.only(
+                      left: (widget.width - _ruleScaleInterval) / 2,
+                      right: (widget.width - _ruleScaleInterval) / 2,
+                    ),
+                    itemExtent: _ruleScaleInterval,
+                    itemCount: widget.endValue - widget.beginValue + 1,
+                    controller: scrollController,
+                    scrollDirection: Axis.horizontal,
+                    itemBuilder: _buildRulerScale,
+                  ),
+                ),
+              ),
+            ),
+          ),
           Align(
             alignment: Alignment.topCenter,
             child: widget.marker ?? _buildMark(),
@@ -340,7 +347,7 @@ class RulerPickerState extends State<RulerPicker> {
     double targetValue = (value - widget.beginValue) * _ruleScaleInterval;
     if (targetValue < 0) targetValue = 0;
 
-    scrollController.jumpTo(targetValue.toDouble());
+    scrollController.jumpTo(targetValue);
   }
 }
 
